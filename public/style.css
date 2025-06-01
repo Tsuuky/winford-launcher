@@ -1,0 +1,137 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #191c20;
+  color: #eee;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#titlebar {
+  height: 36px;
+  background: #22252e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  -webkit-app-region: drag;
+  user-select: none;
+  border-bottom: 1px solid #393e4a;
+}
+
+.window-controls {
+  display: flex;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.window-controls button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  width: 32px;
+  height: 28px;
+  border-radius: 3px;
+  transition: background 0.18s;
+  cursor: pointer;
+  margin-left: 1px;
+  margin-right: 1px;
+}
+.window-controls button:hover {
+  background: #364156;
+}
+
+#main-content {
+  display: flex;
+  height: calc(100vh - 36px);
+}
+
+.news {
+  flex: 1.1;
+  background: #242736;
+  padding: 38px 26px;
+  color: #e0e0e0;
+  border-right: 1px solid #303142;
+  display: flex;
+  flex-direction: column;
+}
+
+.news h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.2em;
+  letter-spacing: 1px;
+  color: #67b2fc;
+}
+
+.news ul {
+  list-style: disc inside;
+  padding-left: 12px;
+  margin: 0;
+  font-size: 1em;
+}
+.news li + li {
+  margin-top: 9px;
+}
+
+.login {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #1a1c25;
+}
+
+.login h2 {
+  margin-bottom: 17px;
+  color: #67b2fc;
+}
+
+.login input {
+  padding: 9px 11px;
+  border-radius: 6px;
+  border: none;
+  margin-bottom: 14px;
+  background: #23263a;
+  color: #fff;
+  font-size: 1em;
+  width: 200px;
+  outline: none;
+}
+
+.login button {
+  padding: 10px 24px;
+  border-radius: 6px;
+  border: none;
+  background: #3c91e6;
+  color: #fff;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+  outline: none;
+}
+.login button:hover {
+  background: #286cc3;
+}
+#ms-login-btn:hover {
+  background: #1954a8 !important;
+}
+
+#log {
+  width: 215px;
+  height: 96px;
+  background: #23263a;
+  border-radius: 8px;
+  overflow-y: auto;
+  font-size: 0.95em;
+  margin-top: 7px;
+  padding: 7px;
+  color: #b8e1fb;
+  box-sizing: border-box;
+  border: 1px solid #29304a;
+}

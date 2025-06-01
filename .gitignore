@@ -1,0 +1,15 @@
+# Ne pas traquer les dépendances et les builds
+node_modules/
+dist/
+build/
+*.exe
+*.asar
+
+# Fichiers systèmes
+.DS_Store
+Thumbs.db
+
+# Logs éventuels
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
