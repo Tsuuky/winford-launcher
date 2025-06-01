@@ -1,10 +1,11 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const { Client, Authenticator } = require('minecraft-launcher-core');
 const { Auth } = require("msmc");
+const { autoUpdater } = require('electron-updater');
 require('@electron/remote/main').initialize();
 
 function createWindow () {
@@ -24,22 +25,22 @@ function createWindow () {
   win.loadFile('public/index.html');
 }
 
-app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
-  createWindow();
-});
+const getRootDir = () => {
+  // Stocke tout dans le dossier utilisateur dédié Electron
+  return path.join(app.getPath('userData'), '.winford');
+};
 
-const rootDir = path.join(__dirname, '.winford');
-const modsDir = path.join(rootDir, 'mods');
-const forgeDir = path.join(rootDir, 'forge');
+const getModsDir = () => path.join(getRootDir(), 'mods');
+const getForgeDir = () => path.join(getRootDir(), 'forge');
 
 async function ensureDir(dir) {
   try { await fsp.mkdir(dir, { recursive: true }); } catch {}
 }
 
 async function installModsFromAPI(event) {
+  const modsDir = getModsDir();
   // 1. Récupère la liste des mods depuis l'API
-  const res = await fetch('http://localhost:5100/mods');
+  const res = await fetch('http://164.132.203.136:5100/mods');
   if (!res.ok) {
     event.sender.send('log', "[ERREUR] Impossible de récupérer la liste des mods !");
     return false;
@@ -132,9 +133,9 @@ async function installModsFromAPI(event) {
   return true;
 }
 
-// ----------
 // Télécharge le jar forge si besoin (depuis l'API) et retourne son chemin
 async function ensureForgeJar(event) {
+  const forgeDir = getForgeDir();
   // Récupère infos Forge (version, filename, url)
   const res = await fetch('http://localhost:5100/forge');
   if (!res.ok) {
@@ -147,7 +148,6 @@ async function ensureForgeJar(event) {
 
   const localForgeJar = path.join(forgeDir, info.filename);
 
-  // Vérifie si déjà téléchargé
   let needDownload = false;
   try { await fsp.access(localForgeJar); }
   catch { needDownload = true; }
@@ -157,7 +157,6 @@ async function ensureForgeJar(event) {
     return { forgePath: localForgeJar, minecraftVersion: info.minecraftVersion };
   }
 
-  // Télécharge le forge installer jar depuis l'API
   event.sender.send('log', `[→] Téléchargement Forge (${info.filename})...`);
   const forgeRes = await fetch(info.url);
   if (!forgeRes.ok) {
@@ -173,24 +172,68 @@ async function ensureForgeJar(event) {
   event.sender.send('log', `[OK] Forge installé !`);
   return { forgePath: localForgeJar, minecraftVersion: info.minecraftVersion };
 }
-// ----------
+
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
+  createWindow();
+
+  // ========== AUTO-UPDATE ===============
+  autoUpdater.logger = require("electron-log");
+  autoUpdater.logger.transports.file.level = "info";
+
+  // Si jamais il y a besoin de préciser l'URL, décommente ça :
+  autoUpdater.setFeedURL({
+    provider: "github",
+    owner: "Tsuuky", // <-- change ici si ton repo GitHub a changé !
+    repo: "winford-launcher"
+  });
+
+  autoUpdater.checkForUpdatesAndNotify();
+
+  autoUpdater.on('update-available', () => {
+    dialog.showMessageBox({
+      type: "info",
+      title: "Mise à jour disponible",
+      message: "Une nouvelle version du launcher est disponible. Téléchargement en cours…"
+    });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox({
+      type: "question",
+      buttons: ["Redémarrer", "Plus tard"],
+      defaultId: 0,
+      message: "La mise à jour est prête. Redémarrer maintenant ?",
+    }).then(result => {
+      if (result.response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    dialog.showErrorBox("Erreur de mise à jour", err == null ? "unknown" : (err.stack || err).toString());
+  });
+
+  // Log du chemin racine utilisé pour debug
+  console.log("[DEBUG] Dossier racine Winford utilisé :", getRootDir());
+});
 
 ipcMain.on('launch-minecraft', async (event, params) => {
-  // 1. Synchronise les mods
+  const rootDir = getRootDir();
+  const modsDir = getModsDir();
+  const forgeDir = getForgeDir();
+
   const modsOK = await installModsFromAPI(event);
   if (modsOK === false) {
     event.sender.send('log', "[ERREUR] Lancement annulé : installation des mods impossible.");
     return;
   }
 
-  // 2. Synchronise et récupère le jar d'installation Forge
   const forgeInfo = await ensureForgeJar(event);
   if (!forgeInfo) {
     event.sender.send('log', "[ERREUR] Lancement annulé : Forge non disponible.");
     return;
   }
 
-  // 3. Lance le jeu avec le bon chemin vers le jar Forge !
   const launcher = new Client();
 
   let opts = {
@@ -203,7 +246,7 @@ ipcMain.on('launch-minecraft', async (event, params) => {
       max: "2G",
       min: "1G"
     },
-    forge: forgeInfo.forgePath // Chemin complet vers le .jar Forge
+    forge: forgeInfo.forgePath
   };
 
   if (params.msauth && params.msProfile) {

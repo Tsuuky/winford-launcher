@@ -9,10 +9,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "publish": "electron-builder --publish always"
   },
   "dependencies": {
     "@electron/remote": "^2.1.2",
+    "electron-log": "^5.4.0",
+    "electron-updater": "^6.6.2",
     "minecraft-launcher-core": "^3.18.2",
     "msmc": "^5.0.5"
   },
